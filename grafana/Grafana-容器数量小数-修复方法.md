@@ -11,13 +11,13 @@
 
 ### ❌ 反面例子（错误配置）
 
-下图是**错误配置**下的结果 —— `Calculation = Mean`（平均值），导致 `Running containers` 显示成 **56.5** 这种小数：
+下图是**错误配置**下的结果 —— `Calculation = Mean`（平均值），导致 `Running containers` 显示成 **48.1** 这种小数：
 
 ![反面例子：Calculation=Mean 导致容器数显示小数](screenshots/02-WRONG-mean-decimal.png)
 
 > 对比图中 `Mean` 与 `Last` 两种计算方式的输出：
-> - **Mean（❌ 错误）** → 时间区间平均值 → **小数**（如 56.5）
-> - **Last（✅ 正确）** → 当前值 → **整数**（如 56）
+> - **Mean（❌ 错误）** → 时间区间平均值 → **小数**（如 48.1）
+> - **Last（✅ 正确）** → 当前值 → **整数**（如 48）
 >
 > 所以看到 `Running containers` 带小数，就是这个坑。
 
