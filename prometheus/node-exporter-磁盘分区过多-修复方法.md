@@ -54,9 +54,13 @@ Grafana 的 node-exporter 看板磁盘面板里，除了 `/` 还出现了：
         regex: '/rootfs'
         target_label: mountpoint
         replacement: '/'
-      # 2) node_filesystem_* 只保留 "/"，丢弃 /run /datas /etc/hosts /host/* 等
+      # 2) 丢弃伪文件系统(tmpfs/overlay/nfs/...)，真实磁盘(ext4/xfs/...)全保留
+      - source_labels: [__name__, fstype]
+        regex: 'node_filesystem_[^;]+;(tmpfs|devtmpfs|overlay|nfs|nfs4|autofs|squashfs|ramfs|fuse\..*|nsfs|proc|sysfs|cgroup2?)'
+        action: drop
+      # 3) 丢弃容器内挂载点(/etc/hosts /host/* /rootfs/*)
       - source_labels: [__name__, mountpoint]
-        regex: 'node_filesystem_[^;]+;/.+'
+        regex: 'node_filesystem_[^;]+;(/etc/.+|/host/.+|/rootfs/.+)'
         action: drop
 ```
 
@@ -65,8 +69,8 @@ Grafana 的 node-exporter 看板磁盘面板里，除了 `/` 还出现了：
 curl -X POST http://localhost:9091/-/reload
 ```
 
-> ⚠️ 注意 `regex: 'node_filesystem_[^;]+;/.+'` 中 `/.+` 表示"`/` 后还有字符"，
-> 所以只匹配 `/run`、`/rootfs`（规范化后已变成 `/`，不再匹配）等，**保留单独的 `/`**。
+> ✅ **推荐用 fstype 版**：按"文件系统类型"过滤（丢弃 tmpfs/NFS/overlay），
+> 而不是白名单只留 `/`。好处：**以后新增真实磁盘挂载（如 NVMe 挂 `/opt`）会自动显示，无需改配置**。
 
 ### 方案 B：修复 node_exporter 配置（治本）
 
@@ -93,6 +97,29 @@ curl -X POST http://localhost:9091/-/reload
 ```bash
 docker compose -f /opt/dockercomposenode_exporter.yml up -d --force-recreate node-exporter
 ```
+
+## 三之二、以后新增磁盘挂载怎么办（fstype 版的优势）
+
+例如把 NVMe 盘挂到 `/opt`：
+
+```bash
+mkfs.ext4 /dev/nvme0n1          # 必须是真实文件系统(ext4/xfs)
+mount /dev/nvme0n1 /opt
+# 并写入 /etc/fstab 持久化
+```
+
+**需要改的配置：0 处** —— 全自动：
+
+| 环节 | 行为 |
+|------|------|
+| node_exporter | ✅ 自动发现新挂载点（无需改） |
+| Prometheus relabel（fstype 版） | ✅ 自动放行（ext4/xfs 不在丢弃列表） |
+| Grafana | ✅ 磁盘面板自动出现 `/opt` |
+
+> ⚠️ 前提：fstype 是真实文件系统（ext4/xfs）；若挂成 tmpfs/overlay 会被规则2丢弃。
+> ⏱ 数据延迟：采集周期 30s。
+
+**对比**：如果用"白名单只留 `/`"的旧版，**每次加盘都要改 `prometheus.yml` 并 reload**。
 
 ## 四、验证
 
