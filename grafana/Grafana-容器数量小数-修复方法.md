@@ -52,8 +52,16 @@
 
 ### 脚本位置
 
+| 来源 | 路径 |
+|------|------|
+| **本仓库**（推荐分发） | [`prometheus/fix-grafana-panel-calcs.sh`](../prometheus/fix-grafana-panel-calcs.sh) |
+| 服务器 10.12.7.250 | `/opt/acoinfo/swfactory/prometheus/fix-grafana-panel-calcs.sh` |
+
+从仓库获取脚本（新环境用）：
+
 ```bash
-/opt/acoinfo/swfactory/prometheus/fix-grafana-panel-calcs.sh
+curl -fsSLO https://raw.githubusercontent.com/wuyuanji/monitor/main/prometheus/fix-grafana-panel-calcs.sh
+chmod +x fix-grafana-panel-calcs.sh
 ```
 
 ### 用法
